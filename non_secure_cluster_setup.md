@@ -169,7 +169,7 @@ DataNodeに対する設定項目
 
 #### `etc/hadoop/yarn-site.xml`
 
-ResourceManagerとNodeManagerに対する設定項目
+ResourceManagerとNodeManagerに対する共通の設定項目
 
 |パラメタ|値|備考|
 |----|----|----|
@@ -177,6 +177,27 @@ ResourceManagerとNodeManagerに対する設定項目
 |yarn.admin.acl|Admin ACL||
 |yarn.log-aggregation-enable|false||
 
+ResourceManagerに対する設定項目
+
+|パラメタ|値|備考|
+|----|----|----|
+|yarn.resourcemanager.address|クライアントがジョブを送信するための ResourceManager のホスト:ポート。|ホスト:ポート この値を設定すると、`yarn.resourcemanager.hostname` で設定されたホスト名を上書きする。|
+|yarn.resourcemanager.scheduler.address|ApplicationMaster がリソースを取得するために Scheduler と通信する ResourceManager のホスト:ポート。|ホスト:ポート この値を設定すると、`yarn.resourcemanager.hostname` で設定されたホスト名を上書きする。|
+|yarn.resourcemanager.resource-tracker.address|NodeManager が接続するための ResourceManager のホスト:ポート。|ホスト:ポート この値を設定すると、`yarn.resourcemanager.hostname` で設定されたホスト名を上書きする。|
+|yarn.resourcemanager.admin.address|管理コマンドを実行するための ResourceManager のホスト:ポート。|ホスト:ポート この値を設定すると、`yarn.resourcemanager.hostname` で設定されたホスト名を上書きする。|
+|yarn.resourcemanager.webapp.address|ResourceManager の Web UI のホスト:ポート。|ホスト:ポート この値を設定すると、`yarn.resourcemanager.hostname` で設定されたホスト名を上書きする。|
+|yarn.resourcemanager.hostname|ResourceManager のホスト名。|ホスト `yarn.resourcemanager*address` のすべての設定の代わりに、単一のホスト名を指定できる。これにより、ResourceManager の各コンポーネントにデフォルトのポートが適用される。|
+|yarn.resourcemanager.scheduler.class|ResourceManager のスケジューラクラス。|推奨: `CapacityScheduler` または `FairScheduler`。`FifoScheduler` も使用可能。完全修飾クラス名を使用すること（例: `org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler`）。|
+|yarn.scheduler.minimum-allocation-mb|ResourceManager で各コンテナ要求に割り当てるメモリの最小値。|MB単位|
+|yarn.scheduler.maximum-allocation-mb|ResourceManager で各コンテナ要求に割り当てるメモリの最大値。|MB単位|
+|yarn.resourcemanager.nodes.include-path|許可された NodeManager のリスト。|必要に応じて、これらのファイルを使用して許可する NodeManager のリストを制御する。|
+|yarn.resourcemanager.nodes.exclude-path|許可された NodeManager のリスト。|必要に応じて、これらのファイルを使用して許可しない NodeManager のリストを制御する。|
+
+
+NodeManagerに対する設定項目
+
+|パラメタ|値|備考|
+|----|----|----|
 
 
 
