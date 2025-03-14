@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/sample_project.dir/src/main.cpp.o CMakeFiles/sample_project.dir/src/utils.cpp.o -o sample_project
