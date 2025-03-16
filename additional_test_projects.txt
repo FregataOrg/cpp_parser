@@ -1,0 +1,6 @@
+https://github.com/keroro824/HashingDeepLearning
+https://github.com/ggml-org/llama.cpp.git
+https://github.com/MariaDB/server.git
+https://github.com/qt/qtbase.git
+https://github.com/opencv/opencv.git
+https://gitlab.com/libeigen/eigen.git
