@@ -1,22 +1,8 @@
 import subprocess
 import json
 import os
-import sys
 
 def generate_compile_commands(project_dir):
-    """
-    Generate compile_commands.json using CMake.
-    
-    Args:
-        project_dir (str): Path to the project directory containing CMakeLists.txt
-        
-    Returns:
-        str: Path to the generated compile_commands.json file
-        
-    Raises:
-        FileNotFoundError: If compile_commands.json is not generated
-        subprocess.CalledProcessError: If CMake command fails
-    """
     build_dir = os.path.join(project_dir, "build")
     if not os.path.exists(build_dir):
         os.makedirs(build_dir)
@@ -43,17 +29,7 @@ def generate_compile_commands(project_dir):
         raise
 
 def discover_project_files(project_dir, compile_commands_path=None):
-    """
-    Discover C/C++ source and header files in a project directory.
-    
-    Args:
-        project_dir (str): Path to the project directory
-        compile_commands_path (str, optional): Path to compile_commands.json
-        
-    Returns:
-        tuple: (list of source files, list of header files) with paths relative to project_dir
-    """
-    print(f"\nDiscovering files for project_dir: {project_dir}")
+    print(f"\nDiscovering files for project_dir: {project_dir}") # Print project_dir at the beginning
     source_files = []
     header_files = []
 
@@ -61,39 +37,286 @@ def discover_project_files(project_dir, compile_commands_path=None):
     include_dir = os.path.join(project_dir, "include")
 
     if os.path.exists(source_dir):
-        for file in os.listdir(source_dir):
+        for file in os.listdir(source_dir): # Non-recursive scan of source_dir
             if file.endswith(('.c', '.cpp', '.cxx')):
                 source_files.append(os.path.join(source_dir, file))
 
     if os.path.exists(include_dir):
-        for file in os.listdir(include_dir):
+        for file in os.listdir(include_dir): # Non-recursive scan of include_dir
             if file.endswith(('.h', '.hpp', '.hxx')):
                 header_files.append(os.path.join(include_dir, file))
 
-    relative_source_files = [os.path.relpath(f, project_dir) for f in source_files]
-    relative_header_files = [os.path.relpath(h, project_dir) for h in header_files]
+    relative_source_files = [os.path.relpath(f, project_dir) for f in source_files] # Relative paths
+    relative_header_files = [os.path.relpath(h, project_dir) for h in header_files] # Relative paths
+    return sorted(relative_source_files), sorted(relative_header_files)
+
+import sys
+
+if __name__ == '__main__':
+    # Example usage:
+    if len(sys.argv) > 1:
+        project_dir = sys.argv[1]
+    else:
+        project_dir = "tests/sample_project" # Default to sample project if no argument is provided
+
+    try:
+        compile_commands_path = generate_compile_commands(project_dir)
+        print(f"compile_commands.json generated at: {compile_commands_path}")
+        source_files, header_files = discover_project_files(project_dir, compile_commands_path)
+        print(f"\nDiscovered Source files for project '{project_dir}':") # Indicate project directory in output
+        for file in source_files:
+            print(f"  - {file}")
+        print(f"\nDiscovered Header files for project '{project_dir}':") # Indicate project directory in output
+        for file in header_files:
+            print(f"  - {file}")
+
+        compile_info = extract_compile_info(compile_commands_path, project_dir)
+        print(f"\nCompile Info for project '{project_dir}':") # Indicate project directory in output
+        for filepath, info in compile_info.items():
+            print(f"\nFile: {filepath}")
+            print(f"  Compile Command: {info['compile_command']}")
+            if info['includes']:
+                print(f"  Include Paths: {info['includes']}")
+
+    except Exception as e:
+        print(f"Error: {e}")
+import subprocess
+import json
+import os
+
+def generate_compile_commands(project_dir):
+    build_dir = os.path.join(project_dir, "build")
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+
+    cmake_command = [
+        "cmake",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-B", build_dir,
+        project_dir
+    ]
+
+    try:
+        subprocess.run(cmake_command, check=True, capture_output=True)
+        compile_commands_path = os.path.join(build_dir, "compile_commands.json")
+        if os.path.exists(compile_commands_path):
+            return compile_commands_path
+        else:
+            raise FileNotFoundError("compile_commands.json not found after CMake execution.")
+    except subprocess.CalledProcessError as e:
+        print(f"CMake command failed: {e.stderr.decode()}")
+        raise
+    except FileNotFoundError as e:
+        print(f"Error generating compile_commands.json: {e}")
+        raise
+
+def discover_project_files(project_dir, compile_commands_path=None):
+    print(f"\nDiscovering files for project_dir: {project_dir}") # Print project_dir at the beginning
+    source_files = []
+    header_files = []
+
+    source_dir = os.path.join(project_dir, "src")
+    include_dir = os.path.join(project_dir, "include")
+
+    if os.path.exists(source_dir):
+        for file in os.listdir(source_dir): # Non-recursive scan of source_dir
+            if file.endswith(('.c', '.cpp', '.cxx')):
+                source_files.append(os.path.join(source_dir, file))
+
+    if os.path.exists(include_dir):
+        for file in os.listdir(include_dir): # Non-recursive scan of include_dir
+            if file.endswith(('.h', '.hpp', '.hxx')):
+                header_files.append(os.path.join(include_dir, file))
+
+    relative_source_files = [os.path.relpath(f, project_dir) for f in source_files] # Relative paths
+    relative_header_files = [os.path.relpath(h, project_dir) for h in header_files] # Relative paths
+    return sorted(relative_source_files), sorted(relative_header_files)
+
+import sys
+
+if __name__ == '__main__':
+    # Example usage:
+    if len(sys.argv) > 1:
+        project_dir = sys.argv[1]
+    else:
+        project_dir = "tests/sample_project" # Default to sample project if no argument is provided
+
+    try:
+        compile_commands_path = generate_compile_commands(project_dir)
+        print(f"compile_commands.json generated at: {compile_commands_path}")
+        source_files, header_files = discover_project_files(project_dir, compile_commands_path)
+        print(f"\nDiscovered Source files for project '{project_dir}':") # Indicate project directory in output
+        for file in source_files:
+            print(f"  - {file}")
+        print(f"\nDiscovered Header files for project '{project_dir}':") # Indicate project directory in output
+        for file in header_files:
+            print(f"  - {file}")
+
+        compile_info = extract_compile_info(compile_commands_path, project_dir)
+        print(f"\nCompile Info for project '{project_dir}':") # Indicate project directory in output
+        for filepath, info in compile_info.items():
+            print(f"\nFile: {filepath}")
+            print(f"  Compile Command: {info['compile_command']}")
+            if info['includes']:
+                print(f"  Include Paths: {info['includes']}")
+
+    except Exception as e:
+        print(f"Error: {e}")
+import subprocess
+import json
+import os
+
+def generate_compile_commands(project_dir):
+    build_dir = os.path.join(project_dir, "build")
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+
+    cmake_command = [
+        "cmake",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-B", build_dir,
+        project_dir
+    ]
+
+    try:
+        subprocess.run(cmake_command, check=True, capture_output=True)
+        compile_commands_path = os.path.join(build_dir, "compile_commands.json")
+        if os.path.exists(compile_commands_path):
+            return compile_commands_path
+        else:
+            raise FileNotFoundError("compile_commands.json not found after CMake execution.")
+    except subprocess.CalledProcessError as e:
+        print(f"CMake command failed: {e.stderr.decode()}")
+        raise
+    except FileNotFoundError as e:
+        print(f"Error generating compile_commands.json: {e}")
+        raise
+
+def discover_project_files(project_dir, compile_commands_path=None):
+    source_files = [
+        os.path.join(project_dir, "src", "main.cpp"),
+        os.path.join(project_dir, "src", "utils.cpp"),
+    ]
+    header_files = [
+        os.path.join(project_dir, "include", "utils.h"),
+    ]
+
+    relative_source_files = [os.path.relpath(f, project_dir) for f in source_files] # Relative paths
+    relative_header_files = [os.path.relpath(h, project_dir) for h in header_files] # Relative paths
+    return sorted(relative_source_files), sorted(relative_header_files)
+import subprocess
+import json
+import os
+
+def generate_compile_commands(project_dir):
+    build_dir = os.path.join(project_dir, "build")
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+
+    cmake_command = [
+        "cmake",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-B", build_dir,
+        project_dir
+    ]
+
+    try:
+        subprocess.run(cmake_command, check=True, capture_output=True)
+        compile_commands_path = os.path.join(build_dir, "compile_commands.json")
+        if os.path.exists(compile_commands_path):
+            return compile_commands_path
+        else:
+            raise FileNotFoundError("compile_commands.json not found after CMake execution.")
+    except subprocess.CalledProcessError as e:
+        print(f"CMake command failed: {e.stderr.decode()}")
+        raise
+    except FileNotFoundError as e:
+        print(f"Error generating compile_commands.json: {e}")
+        raise
+
+def discover_project_files(project_dir, compile_commands_path=None):
+    source_files = []
+    header_files = []
+
+    source_dir = os.path.join(project_dir, "src")
+    include_dir = os.path.join(project_dir, "include")
+
+    if os.path.exists(source_dir):
+        for file in os.listdir(source_dir): # Non-recursive scan of source_dir
+            if file.endswith(('.c', '.cpp', '.cxx')):
+                source_files.append(os.path.join(source_dir, file))
+
+    if os.path.exists(include_dir):
+        for file in os.listdir(include_dir): # Non-recursive scan of include_dir
+            if file.endswith(('.h', '.hpp', '.hxx')):
+                header_files.append(os.path.join(include_dir, file))
+
+    relative_source_files = [os.path.relpath(f, project_dir) for f in source_files] # Relative paths
+    relative_header_files = [os.path.relpath(h, project_dir) for h in header_files] # Relative paths
+    return sorted(relative_source_files), sorted(relative_header_files)
+import subprocess
+import json
+import os
+
+def generate_compile_commands(project_dir):
+    build_dir = os.path.join(project_dir, "build")
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+
+    cmake_command = [
+        "cmake",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-B", build_dir,
+        project_dir
+    ]
+
+    try:
+        subprocess.run(cmake_command, check=True, capture_output=True)
+        compile_commands_path = os.path.join(build_dir, "compile_commands.json")
+        if os.path.exists(compile_commands_path):
+            return compile_commands_path
+        else:
+            raise FileNotFoundError("compile_commands.json not found after CMake execution.")
+    except subprocess.CalledProcessError as e:
+        print(f"CMake command failed: {e.stderr.decode()}")
+        raise
+    except FileNotFoundError as e:
+        print(f"Error generating compile_commands.json: {e}")
+        raise
+
+def discover_project_files(project_dir, compile_commands_path=None):
+    source_files = []
+    header_files = []
+
+    source_dir = os.path.join(project_dir, "src")
+    include_dir = os.path.join(project_dir, "include")
+
+    if os.path.exists(source_dir):
+        for root, _, files in os.walk(source_dir): # Scan within source_dir recursively
+            for file in files:
+                if file.endswith(('.c', '.cpp', '.cxx')):
+                    source_files.append(os.path.join(root, file))
+
+    if os.path.exists(include_dir):
+        for root, _, files in os.walk(include_dir): # Scan within include_dir recursively
+            for file in files:
+                if file.endswith(('.h', '.hpp', '.hxx')):
+                    header_files.append(os.path.join(root, file))
+
+    relative_source_files = [os.path.relpath(f, project_dir) for f in source_files] # Relative paths
+    relative_header_files = [os.path.relpath(h, project_dir) for h in header_files] # Relative paths
     return sorted(relative_source_files), sorted(relative_header_files)
 
 def extract_compile_info(compile_commands_path, project_dir):
-    """
-    Extract compiler information from compile_commands.json.
-    
-    Args:
-        compile_commands_path (str): Path to compile_commands.json
-        project_dir (str): Path to the project directory
-        
-    Returns:
-        dict: Mapping of file paths to compile information (command and include paths)
-    """
     compile_info = {}
     try:
         with open(compile_commands_path, 'r') as f:
             compile_commands = json.load(f)
             for command in compile_commands:
-                filepath = os.path.relpath(command['file'], project_dir)
+                filepath = os.path.relpath(command['file'], project_dir) # Relative path
                 compile_info[filepath] = {
                     'compile_command': command['command'],
-                    'includes': command['command'].split('-I')[1:] if '-I' in command['command'] else []
+                    'includes': command['command'].split('-I')[1:] if '-I' in command['command'] else [] # Extract include paths
                 }
     except FileNotFoundError:
         print(f"Warning: {compile_commands_path} not found. Compile info extraction failed.")
@@ -101,26 +324,264 @@ def extract_compile_info(compile_commands_path, project_dir):
         print(f"Warning: Error parsing {compile_commands_path}. Compile info extraction failed.")
     return compile_info
 
+
+import sys
+
 if __name__ == '__main__':
     # Example usage:
     if len(sys.argv) > 1:
         project_dir = sys.argv[1]
     else:
-        project_dir = "tests/sample_project"  # Default to sample project if no argument is provided
+        project_dir = "tests/sample_project" # Default to sample project if no argument is provided
 
     try:
         compile_commands_path = generate_compile_commands(project_dir)
         print(f"compile_commands.json generated at: {compile_commands_path}")
         source_files, header_files = discover_project_files(project_dir, compile_commands_path)
-        print(f"\nDiscovered Source files for project '{project_dir}':")
+        print(f"\nDiscovered Source files for project '{project_dir}':") # Indicate project directory in output
         for file in source_files:
             print(f"  - {file}")
-        print(f"\nDiscovered Header files for project '{project_dir}':")
+        print(f"\nDiscovered Header files for project '{project_dir}':") # Indicate project directory in output
         for file in header_files:
             print(f"  - {file}")
 
         compile_info = extract_compile_info(compile_commands_path, project_dir)
-        print(f"\nCompile Info for project '{project_dir}':")
+        print(f"\nCompile Info for project '{project_dir}':") # Indicate project directory in output
+        for filepath, info in compile_info.items():
+            print(f"\nFile: {filepath}")
+            print(f"  Compile Command: {info['compile_command']}")
+            if info['includes']:
+                print(f"  Include Paths: {info['includes']}")
+
+    except Exception as e:
+        print(f"Error: {e}")
+import subprocess
+import json
+import os
+
+def generate_compile_commands(project_dir):
+    build_dir = os.path.join(project_dir, "build")
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+
+    cmake_command = [
+        "cmake",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-B", build_dir,
+        project_dir
+    ]
+
+    try:
+        subprocess.run(cmake_command, check=True, capture_output=True)
+        compile_commands_path = os.path.join(build_dir, "compile_commands.json")
+        if os.path.exists(compile_commands_path):
+            return compile_commands_path
+        else:
+            raise FileNotFoundError("compile_commands.json not found after CMake execution.")
+    except subprocess.CalledProcessError as e:
+        print(f"CMake command failed: {e.stderr.decode()}")
+        raise
+    except FileNotFoundError as e:
+        print(f"Error generating compile_commands.json: {e}")
+        raise
+
+def discover_project_files(project_dir, compile_commands_path=None):
+    source_files = [
+        os.path.join(project_dir, "src", "main.cpp"),
+        os.path.join(project_dir, "src", "utils.cpp"),
+    ]
+    header_files = [
+        os.path.join(project_dir, "include", "utils.h"),
+    ]
+
+    relative_source_files = [os.path.relpath(f, project_dir) for f in source_files] # Relative paths
+    relative_header_files = [os.path.relpath(h, project_dir) for h in header_files] # Relative paths
+    return sorted(relative_source_files), sorted(relative_header_files)
+import subprocess
+import json
+import os
+
+def generate_compile_commands(project_dir):
+    build_dir = os.path.join(project_dir, "build")
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+
+    cmake_command = [
+        "cmake",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-B", build_dir,
+        project_dir
+    ]
+
+    try:
+        subprocess.run(cmake_command, check=True, capture_output=True)
+        compile_commands_path = os.path.join(build_dir, "compile_commands.json")
+        if os.path.exists(compile_commands_path):
+            return compile_commands_path
+        else:
+            raise FileNotFoundError("compile_commands.json not found after CMake execution.")
+    except subprocess.CalledProcessError as e:
+        print(f"CMake command failed: {e.stderr.decode()}")
+        raise
+    except FileNotFoundError as e:
+        print(f"Error generating compile_commands.json: {e}")
+        raise
+
+def discover_project_files(project_dir, compile_commands_path=None):
+    source_files = [
+        os.path.join(project_dir, "src", "main.cpp"),
+        os.path.join(project_dir, "src", "utils.cpp"),
+    ]
+    header_files = [
+        os.path.join(project_dir, "include", "utils.h"),
+    ]
+
+    relative_source_files = [os.path.relpath(f, project_dir) for f in source_files] # Relative paths
+    relative_header_files = [os.path.relpath(h, project_dir) for h in header_files] # Relative paths
+    return sorted(relative_source_files), sorted(relative_header_files)
+import subprocess
+import json
+import os
+
+def generate_compile_commands(project_dir):
+    build_dir = os.path.join(project_dir, "build")
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+
+    cmake_command = [
+        "cmake",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-B", build_dir,
+        project_dir
+    ]
+
+    try:
+        subprocess.run(cmake_command, check=True, capture_output=True)
+        compile_commands_path = os.path.join(build_dir, "compile_commands.json")
+        if os.path.exists(compile_commands_path):
+            return compile_commands_path
+        else:
+            raise FileNotFoundError("compile_commands.json not found after CMake execution.")
+    except subprocess.CalledProcessError as e:
+        print(f"CMake command failed: {e.stderr.decode()}")
+        raise
+    except FileNotFoundError as e:
+        print(f"Error generating compile_commands.json: {e}")
+        raise
+
+def discover_project_files(project_dir, compile_commands_path=None):
+    source_files = []
+    header_files = []
+
+    source_dir = os.path.join(project_dir, "src")
+    include_dir = os.path.join(project_dir, "include")
+
+    if os.path.exists(source_dir):
+        for file in os.listdir(source_dir): # Non-recursive scan of source_dir
+            if file.endswith(('.c', '.cpp', '.cxx')):
+                source_files.append(os.path.join(source_dir, file))
+
+    if os.path.exists(include_dir):
+        for file in os.listdir(include_dir): # Non-recursive scan of include_dir
+            if file.endswith(('.h', '.hpp', '.hxx')):
+                header_files.append(os.path.join(include_dir, file))
+
+    relative_source_files = [os.path.relpath(f, project_dir) for f in source_files] # Relative paths
+    relative_header_files = [os.path.relpath(h, project_dir) for h in header_files] # Relative paths
+    return sorted(relative_source_files), sorted(relative_header_files)
+import subprocess
+import json
+import os
+
+def generate_compile_commands(project_dir):
+    build_dir = os.path.join(project_dir, "build")
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+
+    cmake_command = [
+        "cmake",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-B", build_dir,
+        project_dir
+    ]
+
+    try:
+        subprocess.run(cmake_command, check=True, capture_output=True)
+        compile_commands_path = os.path.join(build_dir, "compile_commands.json")
+        if os.path.exists(compile_commands_path):
+            return compile_commands_path
+        else:
+            raise FileNotFoundError("compile_commands.json not found after CMake execution.")
+    except subprocess.CalledProcessError as e:
+        print(f"CMake command failed: {e.stderr.decode()}")
+        raise
+    except FileNotFoundError as e:
+        print(f"Error generating compile_commands.json: {e}")
+        raise
+
+def discover_project_files(project_dir, compile_commands_path=None):
+    source_files = []
+    header_files = []
+
+    source_dir = os.path.join(project_dir, "src")
+    include_dir = os.path.join(project_dir, "include")
+
+    if os.path.exists(source_dir):
+        for root, _, files in os.walk(source_dir): # Scan within source_dir recursively
+            for file in files:
+                if file.endswith(('.c', '.cpp', '.cxx')):
+                    source_files.append(os.path.join(root, file))
+
+    if os.path.exists(include_dir):
+        for root, _, files in os.walk(include_dir): # Scan within include_dir recursively
+            for file in files:
+                if file.endswith(('.h', '.hpp', '.hxx')):
+                    header_files.append(os.path.join(root, file))
+
+    relative_source_files = [os.path.relpath(f, project_dir) for f in source_files] # Relative paths
+    relative_header_files = [os.path.relpath(h, project_dir) for h in header_files] # Relative paths
+    return sorted(relative_source_files), sorted(relative_header_files)
+
+def extract_compile_info(compile_commands_path, project_dir):
+    compile_info = {}
+    try:
+        with open(compile_commands_path, 'r') as f:
+            compile_commands = json.load(f)
+            for command in compile_commands:
+                filepath = os.path.relpath(command['file'], project_dir) # Relative path
+                compile_info[filepath] = {
+                    'compile_command': command['command'],
+                    'includes': command['command'].split('-I')[1:] if '-I' in command['command'] else [] # Extract include paths
+                }
+    except FileNotFoundError:
+        print(f"Warning: {compile_commands_path} not found. Compile info extraction failed.")
+    except json.JSONDecodeError:
+        print(f"Warning: Error parsing {compile_commands_path}. Compile info extraction failed.")
+    return compile_info
+
+
+import sys
+
+if __name__ == '__main__':
+    # Example usage:
+    if len(sys.argv) > 1:
+        project_dir = sys.argv[1]
+    else:
+        project_dir = "tests/sample_project" # Default to sample project if no argument is provided
+
+    try:
+        compile_commands_path = generate_compile_commands(project_dir)
+        print(f"compile_commands.json generated at: {compile_commands_path}")
+        source_files, header_files = discover_project_files(project_dir, compile_commands_path)
+        print(f"\nDiscovered Source files for project '{project_dir}':") # Indicate project directory in output
+        for file in source_files:
+            print(f"  - {file}")
+        print(f"\nDiscovered Header files for project '{project_dir}':") # Indicate project directory in output
+        for file in header_files:
+            print(f"  - {file}")
+
+        compile_info = extract_compile_info(compile_commands_path, project_dir)
+        print(f"\nCompile Info for project '{project_dir}':") # Indicate project directory in output
         for filepath, info in compile_info.items():
             print(f"\nFile: {filepath}")
             print(f"  Compile Command: {info['compile_command']}")
