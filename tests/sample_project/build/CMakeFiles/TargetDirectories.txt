@@ -1,3 +1,0 @@
-/home/fischeri/Projects/cpp_parser/tests/sample_project/build/CMakeFiles/sample_project.dir
-/home/fischeri/Projects/cpp_parser/tests/sample_project/build/CMakeFiles/edit_cache.dir
-/home/fischeri/Projects/cpp_parser/tests/sample_project/build/CMakeFiles/rebuild_cache.dir
