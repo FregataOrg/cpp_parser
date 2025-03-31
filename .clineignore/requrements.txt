@@ -1,0 +1,13 @@
+> わたし:  
+
+"Based on the attached Design Document @design_doc.md, please help me develop a detailed requirements specification for a C/C++ project analysis and database generation tool. The tool should automatically parse C/C++ projects by analyzing the CMakeLists.txt and associated metadata to extract code elements (such as functions, classes, and dependencies) using AST parsing. It should then map these elements into a relational database in a way that allows full reconstruction of the original project structure when the database is properly queried.
+
+In your requirements specification, please address the following points:
+- **Functional Requirements**: Clearly define the scope of project discovery, semantic parsing, and database integration. Include details on how the tool will handle incremental updates (e.g., via file hashing) and manage build metadata (from CMake).
+- **Non-Functional Requirements**: Specify performance, scalability, maintainability, and robustness criteria. Consider integration with other tools (IDEs, linters, etc.) and potential limitations regarding build systems beyond CMake.
+- **System Architecture**: Outline the major components (project discovery, semantic parsing, and database population) and describe how they interact.
+- **Data Model and Query Capabilities**: Provide a high-level description of the relational schema and example queries (e.g., retrieving global functions or class dependencies).
+- **Error Handling and Incremental Updates**: Explain how the system should detect changes (e.g., file modifications) and update the database accordingly.
+- **Future Enhancements and Extensibility**: Identify possible extensions (e.g., support for other build systems, additional code analysis features) and design considerations for future scalability.
+
+Feel free to ask any clarifying questions or propose improvements to ensure the requirements capture all critical aspects of the project."
